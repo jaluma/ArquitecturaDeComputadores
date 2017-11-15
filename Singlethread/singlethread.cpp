@@ -24,7 +24,7 @@ void removeVector();
 double timer(void(*function)(void));
 void generateFile(double* times, double average, double std_deviation);
 
-
+// Comentario main Lino
 int main() {
 	double times[NTIMES];
 	double average, variance, std_deviation, sum = 0, sum1 = 0;
