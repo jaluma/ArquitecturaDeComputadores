@@ -20,21 +20,21 @@ using namespace std;
 // Definicion de funciones a usar en el main
 void createVector();
 void removeVector();
-void Sub(int* vector);
-void Dif2(int* vector);
-void CountPositiveValues(int* vector);
+void Sub(float* vector);
+void Dif2(float* vector);
+void CountPositiveValues(float* vector);
 
 // Calculo de media y desviación
-double timer(void(*function)(int*));
+double timer(void(*function)(float*));
 void generateFile(double* times, double average, double std_deviation, string nameFunction);
-void calculate_average_deviation(void(*function)(int*));
+void calculate_average_deviation(void(*function)(float*));
 
 // Timer
 LARGE_INTEGER frequency;
 LARGE_INTEGER tStart;
 LARGE_INTEGER tEnd;
 double dElapsedTimeS;
-int* vector;	// int[] vector;
+float* vector;	// int[] vector;
 
 int main() {
 	// funcion Sub
@@ -50,10 +50,13 @@ int main() {
 
 // Crear vector
 void createVector() {
-	vector = (int *)_aligned_malloc(SIZE * sizeof(int), sizeof(__m256i));
+	vector = (float *)_aligned_malloc(SIZE * sizeof(float), sizeof(__m256i));
 
 	for (int i = 0; i < SIZE; i++) {
-		vector[i] = (rand() % 3) - 1;	// rango de (0,2) - 1 ==> (-1, 1)
+		float random = ((float)rand()) / (float)RAND_MAX;
+		float diff = 1 - (-1);
+		float r = random * diff;
+		vector[i] = (-1) + r;;	// rango de (0,2) - 1 ==> (-1, 1)
 	}
 }
 
@@ -62,7 +65,7 @@ void removeVector() {
 	_aligned_free(vector);
 }
 
-void calculate_average_deviation(void(*function)(int*)) {
+void calculate_average_deviation(void(*function)(float*)) {
 	double times[NTIMES];
 	double average, variance, std_deviation, sum = 0, sum1 = 0;
 
@@ -88,7 +91,7 @@ void calculate_average_deviation(void(*function)(int*)) {
 	generateFile(times, average, std_deviation, GET_VARIABLE_NAME(function));
 }
 
-void Sub(int* vector) {
+void Sub(float* vector) {
 	int sub = 0;
 	/*__m256i sub4 = _mm256_load_epi32(&vector[0]);*/				 // 512 bits type, storing sixteen 32 bit integers
 	__m256i sub4 = *(__m256i*)vector;
@@ -97,7 +100,7 @@ void Sub(int* vector) {
 	for (int j = 1; j < SIZE / 8; j++) {
 		sub4 = _mm256_sub_epi32(sub4, *(__m256i *)&vector[j * 8]);
 
-		int *p = (int*)&sub4;										// Pointer p points to the first 32 integer in the packet
+		float *p = (float*)&sub4;										// Pointer p points to the first 32 integer in the packet
 		for (int i = 0; i < 256 / 32; i++) {
 			sub += *(p + i);										// Ahora se suman los valores de las restas calculadas
 		}
@@ -107,7 +110,7 @@ void Sub(int* vector) {
 		printf("La resta es %d\n", sub);
 }
 
-void CountPositiveValues(int* vector) {
+void CountPositiveValues(float* vector) {
 	unsigned int count = 0, i = 0, maskInteger = 0x80000000;
 	__m256i mask = _mm256_set1_epi32(maskInteger);
 	//Calculate count
@@ -115,7 +118,7 @@ void CountPositiveValues(int* vector) {
 		__m256i value = *(__m256i*)&vector[j * 8];			// mal, no se arreglarlo. ellos lo tienen igual
 		__m256i and = _mm256_and_si256(value, mask);	// mascara para mirar el bit mas significativo
 
-		int *p = (int*)&and;
+		float *p = (float*)&and;
 
 		if (*p != 0x80000000) {
 			count++;
@@ -125,16 +128,10 @@ void CountPositiveValues(int* vector) {
 		printf("El contador de numeros positivos es %d\n", count);
 }
 
-void Dif2(int* vector) {
+void Dif2(float* vector) {
 	float valueFloat = 0;
 	int i = 0;
 	__m256 value = *(__m256 *)_aligned_malloc(SIZE * sizeof(int), sizeof(__m256i));// 512 bits type, storing sixteen 32 bit integers
-
-																				   // Convierto el vector a float. Misma referencia para luego dejar libre la misma dirección de memoria
-	float* vectorFloat = (float*)vector;
-	for (int j = 0; j < SIZE; j++) {
-		vectorFloat[j] = (float)vector[j];
-	}
 
 	//Inicializamos una variable con el valor 2
 	__m256 number2 = _mm256_set_ps(2, 2, 2, 2, 2, 2, 2, 2);
@@ -158,7 +155,7 @@ void Dif2(int* vector) {
 
 // Codigo para calcular tiempos
 
-double timer(void(*function)(int*)) {
+double timer(void(*function)(float*)) {
 	// Get clock frequency in Hz
 	QueryPerformanceFrequency(&frequency);
 	// Get initial clock count

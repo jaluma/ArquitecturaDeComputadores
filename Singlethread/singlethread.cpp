@@ -17,7 +17,7 @@ LARGE_INTEGER frequency;
 LARGE_INTEGER tStart;
 LARGE_INTEGER tEnd;
 double dElapsedTimeS;
-int* vector;	// int[] vector;
+float* vector;	// int[] vector;
 
 void createVector();
 void removeVector();
@@ -52,10 +52,13 @@ int main() {
 }
 
 void createVector() {
-	vector = (int *)malloc(SIZE * sizeof(int));
+	vector = (float *)malloc(SIZE * sizeof(float));
 
 	for (int i = 0; i < SIZE; i++) {
-		vector[i] = (rand() % 3) - 1;	// rango de (0,2) - 1 ==> (-1, 1)
+		float random = ((float)rand()) / (float)RAND_MAX;
+		float diff = 1 - (-1);
+		float r = random * diff;
+		vector[i] = (-1) + r;;	// rango de (0,2) - 1 ==> (-1, 1)
 	}
 }
 
@@ -76,7 +79,7 @@ double timer(void(*function)(void)) {
 	// Compute the elapsed time in seconds
 	dElapsedTimeS = (tEnd.QuadPart - tStart.QuadPart) / (double)frequency.QuadPart;
 	// Print the elapsed time
-	/*printf("Elapsed time in seconds: %f\n", dElapsedTimeS);*/
+	printf("Elapsed time in seconds: %f\n", dElapsedTimeS);
 	// Return the elapsed time if it'll util
 	return dElapsedTimeS;
 }
