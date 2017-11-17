@@ -17,40 +17,23 @@ using namespace std;
 #define PRINT_FUNCTIONS				true
 #define PRINT_TIMER					false
 
-// Definicion de funciones a usar en el main
-void createVector();
-void removeVector();
-void Sub(float* vector);
-void Dif2(float* vector);
-void CountPositiveValues(float* vector);
-
-// Calculo de media y desviación
-double timer(void(*function)(float*));
-void generateFile(double* times, double average, double std_deviation, string nameFunction);
-void calculate_average_deviation(void(*function)(float*));
-
 // Timer
 LARGE_INTEGER frequency;
 LARGE_INTEGER tStart;
 LARGE_INTEGER tEnd;
 double dElapsedTimeS;
-float* vector;	// int[] vector;
 
-int main() {
-	// funcion Sub
-	printf("Ejecutando Funcion Sub...\n");
-	calculate_average_deviation(Sub);
-	// funcion Dif
-	printf("Ejecutando Funcion Dif2...\n");
-	calculate_average_deviation(Dif2);
-	// funcion CuntPositiveValues
-	printf("Ejecutando Funcion CountPositiveValues...\n");
-	calculate_average_deviation(CountPositiveValues);
-}
+float* u;
+float* t;
+float* w;
 
-// Crear vector
-void createVector() {
-	vector = (float *)_aligned_malloc(SIZE * sizeof(float), sizeof(__m256i));
+//atributos de return
+float* r;			// vector resultante de op1
+unsigned int k;		//numero de positivos op2
+float* s;			// vector resultante de op3
+
+float* createVector() {
+	float* vector = (float *)_aligned_malloc(SIZE * sizeof(float), sizeof(__m256i));
 
 	for (int i = 0; i < SIZE; i++) {
 		float random = ((float)rand()) / (float)RAND_MAX;
@@ -58,22 +41,104 @@ void createVector() {
 		float r = random * diff;
 		vector[i] = (-1) + r;;	// rango de (0,2) - 1 ==> (-1, 1)
 	}
+	return vector;
 }
 
 //eliminar vector
-void removeVector() {
-	_aligned_free(vector);
+void removeVector(float* vector) {
+	free(vector);
 }
 
-void calculate_average_deviation(void(*function)(float*)) {
+void Dif2() {
+	r = (float *)_aligned_malloc((SIZE-1) * sizeof(float), sizeof(__m256i));
+	//Inicializamos una variable con el valor 2
+	__m256 number2 = _mm256_set_ps(2, 2, 2, 2, 2, 2, 2, 2);
+	//inicializamos una variable donde meter dif2
+	__m256 value = *(__m256 *)_aligned_malloc(SIZE * sizeof(int), sizeof(__m256i));// 256 bits type, storing sixteen 32 bit integers
+	float valueFloat = 0;
+
+	for (int i = 0; i < SIZE - 1; i++) {
+		__m256 valuei = *(__m256 *)&u[(i+1) * 8];
+		__m256 valuei_minus_1 = *(__m256 *)&u[i * 8];
+		value = _mm256_sub_ps(valuei, valuei_minus_1);
+		value = _mm256_div_ps(value, number2);
+
+		float *p = (float*)&value;							// Pointer p points to the first 32 integer in the packet
+		for (int j = 0; j < 256 / 32; j++) {
+			r[i + j] = *p;
+			p++;
+			if (PRINT_FUNCTIONS)
+				printf("La diferencia entre dos valores es %09 .f\n", r[i+j]);
+		}
+	}
+}
+
+void countPositiveValues() {
+	__m256 mask = _mm256_set_ps(0x80000000,0,0,0,0,0,0,0);
+	//Calculate count
+	for (int j = 0; j < SIZE / 256; j++) {
+		__m256 value = *(__m256*)&w[j * 8];			// mal, no se arreglarlo. ellos lo tienen igual
+		__m256 and = _mm256_and_ps(value, mask);	// mascara para mirar el bit mas significativo
+
+		float *p = (float*)&and;
+
+		if (*p != 0x80000000) {
+			k++;
+		}
+	}
+	if (PRINT_FUNCTIONS)
+		printf("El contador de numeros positivos es %d\n", k);
+
+}
+
+void Sub() {
+
+}
+
+double timer(void(*function)(void)) {
+	// Get clock frequency in Hz
+	QueryPerformanceFrequency(&frequency);
+	// Get initial clock count
+	QueryPerformanceCounter(&tStart);
+	// Code to be measured
+	function();
+	// Get final clock count
+	QueryPerformanceCounter(&tEnd);
+	// Compute the elapsed time in seconds
+	dElapsedTimeS = (tEnd.QuadPart - tStart.QuadPart) / (double)frequency.QuadPart;
+	// Print the elapsed time
+	if (PRINT_TIMER)
+		printf("Elapsed time in seconds: %f\n", dElapsedTimeS);
+	// Return the elapsed time if it'll util
+	return dElapsedTimeS;
+}
+
+void generateFile(double* times, double average, double std_deviation) {
+	string nameFile = "times_" + to_string(average) + "_" + to_string(std_deviation) + ".csv";
+	ofstream archivo(nameFile);
+
+	for (int i = 0; i < NTIMES; i++) {
+		archivo << times[i];
+		archivo << "\n";
+	}
+	archivo.close();
+}
+
+int main() {
 	double times[NTIMES];
 	double average, variance, std_deviation, sum = 0, sum1 = 0;
 
 	for (int i = 0; i < NTIMES; i++) {
-		createVector();
-		times[i] = timer(function);
+		u = createVector();
+		w = createVector();
+		t = createVector();
+
+		times[i] = timer(Dif2) + timer(countPositiveValues) /*+ timer(Sub)*/;
+
 		sum += times[i];
-		removeVector();
+		removeVector(u);
+		removeVector(w);
+		removeVector(t);
 	}
 
 	average = sum / (double)NTIMES;
@@ -88,99 +153,5 @@ void calculate_average_deviation(void(*function)(float*)) {
 	printf("La media de tiempos es: %f\r\n", average);
 	printf("La desviacion tipica de tiempos es: %f\r\n", std_deviation);
 
-	generateFile(times, average, std_deviation, GET_VARIABLE_NAME(function));
-}
-
-void Sub(float* vector) {
-	int sub = 0;
-	/*__m256i sub4 = _mm256_load_epi32(&vector[0]);*/				 // 512 bits type, storing sixteen 32 bit integers
-	__m256i sub4 = *(__m256i*)vector;
-
-	// Calculate the sub
-	for (int j = 1; j < SIZE / 8; j++) {
-		sub4 = _mm256_sub_epi32(sub4, *(__m256i *)&vector[j * 8]);
-
-		float *p = (float*)&sub4;										// Pointer p points to the first 32 integer in the packet
-		for (int i = 0; i < 256 / 32; i++) {
-			sub += *(p + i);										// Ahora se suman los valores de las restas calculadas
-		}
-	}
-	// Print the sum
-	if (PRINT_FUNCTIONS)
-		printf("La resta es %d\n", sub);
-}
-
-void CountPositiveValues(float* vector) {
-	unsigned int count = 0, i = 0, maskInteger = 0x80000000;
-	__m256i mask = _mm256_set1_epi32(maskInteger);
-	//Calculate count
-	for (int j = 0; j < SIZE / 256; j++) {
-		__m256i value = *(__m256i*)&vector[j * 8];			// mal, no se arreglarlo. ellos lo tienen igual
-		__m256i and = _mm256_and_si256(value, mask);	// mascara para mirar el bit mas significativo
-
-		float *p = (float*)&and;
-
-		if (*p != 0x80000000) {
-			count++;
-		}
-	}
-	if (PRINT_FUNCTIONS)
-		printf("El contador de numeros positivos es %d\n", count);
-}
-
-void Dif2(float* vector) {
-	float valueFloat = 0;
-	int i = 0;
-	__m256 value = *(__m256 *)_aligned_malloc(SIZE * sizeof(int), sizeof(__m256i));// 512 bits type, storing sixteen 32 bit integers
-
-	//Inicializamos una variable con el valor 2
-	__m256 number2 = _mm256_set_ps(2, 2, 2, 2, 2, 2, 2, 2);
-
-	//Codigo
-	for (i = 1; i < SIZE / 8; i++) {
-		__m256 valuei = *(__m256 *)&vector[i * 8];
-		__m256 valueiplus1 = *(__m256 *)&vector[(i - 1) * 8];
-		value = _mm256_sub_ps(valuei, valueiplus1);
-		value = _mm256_div_ps(value, number2);
-
-		float *p = (float*)&value;							// Pointer p points to the first 32 integer in the packet
-		for (int i = 0; i < 256 / 32; i++) {
-			/*valueFloat += (*(p + i) + *(p + i - 1) )/ 2;*/
-			valueFloat += *(p + i);
-		}
-	}
-	if (PRINT_FUNCTIONS)
-		printf("La diferencia entre dos valores es %02.f\n", valueFloat);
-}
-
-// Codigo para calcular tiempos
-
-double timer(void(*function)(float*)) {
-	// Get clock frequency in Hz
-	QueryPerformanceFrequency(&frequency);
-	// Get initial clock count
-	QueryPerformanceCounter(&tStart);
-	// Code to be measured
-	function(vector);
-	// Get final clock count
-	QueryPerformanceCounter(&tEnd);
-	// Compute the elapsed time in seconds
-	dElapsedTimeS = (tEnd.QuadPart - tStart.QuadPart) / (double)frequency.QuadPart;
-	// Print the elapsed time
-	if (PRINT_TIMER)
-		printf("Elapsed time in seconds: %f\n", dElapsedTimeS);
-	// Return the elapsed time if it'll util
-	return dElapsedTimeS;
-}
-
-void generateFile(double* times, double average, double std_deviation, string nameFuction) {
-	string nameFile = "times_" + nameFuction + "_" + to_string(average) + "_" + to_string(std_deviation) + ".csv";
-	ofstream archivo(nameFile);
-
-	for (int i = 0; i < NTIMES; i++) {
-		archivo << times[i];
-		archivo << "\n";
-	}
-
-	archivo.close();
+	generateFile(times, average, std_deviation);
 }
