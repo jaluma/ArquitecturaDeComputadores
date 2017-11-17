@@ -8,7 +8,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <time.h>
 using namespace std;
 // Include required header files
 
@@ -38,14 +37,11 @@ float* createVector() {
 	float* vector = (float *)malloc(sizeof(float) * SIZE);
 
 	for (int i = 0; i < SIZE; i++) {
-		//float random = ((float)rand()) / (float)RAND_MAX;
-		//float diff = 1 - (-1);
-		//float r = random * diff;
-		//vector[i] = (-1) + r;	// rango de (0,2) - 1 ==> (-1, 1)
+		float random = ((float)rand()) / (float)RAND_MAX;
+		float diff = 1 - (-1);
+		float r = random * diff;
+		vector[i] = (-1) + r;	// rango de (0,2) - 1 ==> (-1, 1)
 		/*vector[i] = 1;*/
-
-		float r = -1 + 2 * float((double)rand() / (double)(RAND_MAX)); // Aquí se explica por qué hacerlo con double: https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c#comment56659626_13409133
-		vector[i] = r;
 	}
 	return vector;
 }
@@ -130,9 +126,6 @@ void generateFile(double* times, double average, double std_deviation) {
 
 // Comentario main Lino
 int main() {
-	time_t ti;
-	srand((unsigned) time(&ti)); // Información sobre srand https://www.tutorialspoint.com/c_standard_library/c_function_srand.htm
-
 	double times[NTIMES];
 	double average, variance, std_deviation, sum = 0, sum1 = 0;
 
