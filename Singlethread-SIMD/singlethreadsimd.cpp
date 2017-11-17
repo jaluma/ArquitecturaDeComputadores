@@ -11,8 +11,8 @@
 using namespace std;
 // Include required header files
 
-#define NTIMES						10								// Number of repetitions to get suitable times
-#define SIZE						(1024*1024)						// Number of elements in the array
+#define NTIMES						1								// Number of repetitions to get suitable times
+#define SIZE						1024/*(1024*1024)*/						// Number of elements in the array
 #define GET_VARIABLE_NAME(Variable)	(#Variable)
 #define PRINT_FUNCTIONS				true
 #define PRINT_TIMER					false
@@ -24,8 +24,9 @@ LARGE_INTEGER tEnd;
 double dElapsedTimeS;
 
 float* u;
-float* t;
 float* w;
+float* t;
+float* v;
 
 //atributos de return
 float* r;			// vector resultante de op1
@@ -39,14 +40,15 @@ float* createVector() {
 		float random = ((float)rand()) / (float)RAND_MAX;
 		float diff = 1 - (-1);
 		float r = random * diff;
-		vector[i] = (-1) + r;;	// rango de (0,2) - 1 ==> (-1, 1)
+		/*vector[i] = (-1) + r;*/	// rango de (0,2) - 1 ==> (-1, 1)
+		vector[i] = 1;
 	}
 	return vector;
 }
 
 //eliminar vector
 void removeVector(float* vector) {
-	free(vector);
+	_aligned_free(vector);
 }
 
 void Dif2() {
@@ -54,8 +56,9 @@ void Dif2() {
 	//Inicializamos una variable con el valor 2
 	__m256 number2 = _mm256_set_ps(2, 2, 2, 2, 2, 2, 2, 2);
 	//inicializamos una variable donde meter dif2
-	__m256 value = *(__m256 *)_aligned_malloc(SIZE * sizeof(int), sizeof(__m256i));// 256 bits type, storing sixteen 32 bit integers
-	float valueFloat = 0;
+	__m256 value = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));// 256 bits type, storing sixteen 32 bit integers
+	__m256 valuei = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
+	__m256 valuei_minus_1 = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
 
 	for (int i = 0; i < SIZE - 1; i++) {
 		__m256 valuei = *(__m256 *)&u[(i+1) * 8];
@@ -68,31 +71,51 @@ void Dif2() {
 			r[i + j] = *p;
 			p++;
 			if (PRINT_FUNCTIONS)
-				printf("La diferencia entre dos valores es %09 .f\n", r[i+j]);
+				printf("La diferencia entre dos valores es %f\n", r[i+j]);
 		}
 	}
 }
 
 void countPositiveValues() {
-	__m256 mask = _mm256_set_ps(0x80000000,0,0,0,0,0,0,0);
+	__m256 mask = _mm256_set_ps(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
 	//Calculate count
-	for (int j = 0; j < SIZE / 256; j++) {
-		__m256 value = *(__m256*)&w[j * 8];			// mal, no se arreglarlo. ellos lo tienen igual
+	for (int j = 0; j < SIZE / 8; j++) {
+		__m256 value = *(__m256*)&w[j * 8];
 		__m256 and = _mm256_and_ps(value, mask);	// mascara para mirar el bit mas significativo
 
 		float *p = (float*)&and;
-
-		if (*p != 0x80000000) {
-			k++;
+		for (int i = 0; i < 8; i++) {
+			if (*p != 0x80000000) {
+				k++;
+			}
+			p++;
 		}
+		
 	}
 	if (PRINT_FUNCTIONS)
 		printf("El contador de numeros positivos es %d\n", k);
 
 }
 
+//esta mal
 void Sub() {
+	//inicalizacion del vector V
+	v = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
+	for (int i = 0; i < SIZE - 1; i++) {
+		v[i] = k * r[i];
+	}
 
+	//codigo del programa
+	s = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
+	for (int i = 0; i < SIZE - 1; i++) {
+		s[i] = v[i] - u[i];
+		if (PRINT_FUNCTIONS)
+			printf("La resta es %f\n", s[i]);
+	}
+
+
+	removeVector(v);
+	removeVector(s);
 }
 
 double timer(void(*function)(void)) {
@@ -134,8 +157,8 @@ int main() {
 		t = createVector();
 
 		times[i] = timer(Dif2) + timer(countPositiveValues) /*+ timer(Sub)*/;
-
 		sum += times[i];
+
 		removeVector(u);
 		removeVector(w);
 		removeVector(t);

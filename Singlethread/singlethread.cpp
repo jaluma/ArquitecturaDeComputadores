@@ -11,8 +11,8 @@
 using namespace std;
 // Include required header files
 
-#define NTIMES						10								// Number of repetitions to get suitable times
-#define SIZE						(1024*1024)						// Number of elements in the array
+#define NTIMES						1								// Number of repetitions to get suitable times
+#define SIZE						1024/*(1024*1024)	*/					// Number of elements in the array
 #define GET_VARIABLE_NAME(Variable)	(#Variable)
 #define PRINT_FUNCTIONS				true
 #define PRINT_TIMER					false
@@ -40,7 +40,8 @@ float* createVector() {
 		float random = ((float)rand()) / (float)RAND_MAX;
 		float diff = 1 - (-1);
 		float r = random * diff;
-		vector[i] = (-1) + r;;	// rango de (0,2) - 1 ==> (-1, 1)
+		vector[i] = (-1) + r;	// rango de (0,2) - 1 ==> (-1, 1)
+		/*vector[i] = 1;*/
 	}
 	return vector;
 }
@@ -54,9 +55,10 @@ void Dif2() {
 	r = (float *)malloc(sizeof(float) * (SIZE - 1));
 
 	for (int i = 0; i < SIZE - 1; i++) {
-		r[i] = (u[i + 1] - u[i]) / 2;
+		r[i] = (u[i + 1] - u[i]) / 2.0;
+
 		if (PRINT_FUNCTIONS)
-			printf("La diferencia entre dos valores es %09.f\n", r[i]);
+			printf("La diferencia entre dos valores es %f\n", r[i]);
 	}
 
 }
@@ -65,9 +67,11 @@ void countPositiveValues() {
 	k = 0;
 
 	for (int i = 0; i < SIZE; i++) {
-		if (w[i] > 0)
+		if (w[i] >= 0.0)
 			k++;
 	}
+
+
 	if (PRINT_FUNCTIONS)
 		printf("El contador de numeros positivos es %d\n", k);
 }
@@ -75,15 +79,20 @@ void countPositiveValues() {
 void Sub() {
 	//inicalizacion del vector V
 	v = (float *)malloc(sizeof(float) * (SIZE - 1));
-	for (int i = 0, i < SIZE - 1; i++) {
+	for (int i = 0; i < SIZE - 1; i++) {
 		v[i] = k * r[i];
 	}
 
 	//codigo del programa
+	s = (float *)malloc(sizeof(float) * (SIZE - 1));
 	for (int i = 0; i < SIZE - 1; i++) {
 		s[i] = v[i] - u[i];
+		if (PRINT_FUNCTIONS)
+			printf("La resta es %f\n", s[i]);
 	 }
 
+	removeVector(v);
+	removeVector(s);
 }
 
 double timer(void(*function)(void)) {
