@@ -8,14 +8,17 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <time.h>
+
 using namespace std;
 // Include required header files
 
-#define NTIMES						1								// Number of repetitions to get suitable times
+#define NTIMES						10								// Number of repetitions to get suitable times
 #define SIZE						1024/*(1024*1024)*/						// Number of elements in the array
 #define GET_VARIABLE_NAME(Variable)	(#Variable)
 #define NUMBER_FLOAT				sizeof(__m256) / sizeof(float)
 #define PRINT_FUNCTIONS				true
+#define PRINT_TIMER_FUNCTIONS		false
 #define PRINT_TIMER					true
 
 // Timer
@@ -38,11 +41,12 @@ float* createVector() {
 	float* vector = (float *)_aligned_malloc(SIZE * sizeof(float), sizeof(__m256i));
 
 	for (int i = 0; i < SIZE; i++) {
-		float random = ((float)rand()) / (float)RAND_MAX;
-		float diff = 1 - (-1);
-		float r = random * diff;
-		vector[i] = (-1) + r;	// rango de (0,2) - 1 ==> (-1, 1)
-		/*vector[i] = 1;*/
+		//float random = ((float)rand()) / (float)RAND_MAX;
+		//float diff = 1 - (-1);
+		//float r = random * diff;
+		//vector[i] = (-1) + r;	// rango de (0,2) - 1 ==> (-1, 1)
+		float r = -1 + 2 * float((double)rand() / (double)(RAND_MAX)); // Aquí se explica por qué hacerlo con double: https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c#comment56659626_13409133
+		vector[i] = r;
 	}
 	return vector;
 }
@@ -61,7 +65,7 @@ void Dif2() {
 	__m256 valuei = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
 	__m256 valuei_minus_1 = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
 
-	for (int i = 0; i < SIZE - 1; i++) {
+	for (int i = 0; i < (SIZE - 1) / NUMBER_FLOAT; i++) {
 		__m256 valuei = *(__m256 *)&u[(i+1) * NUMBER_FLOAT];
 		__m256 valuei_minus_1 = *(__m256 *)&u[i * NUMBER_FLOAT];
 		value = _mm256_sub_ps(valuei, valuei_minus_1);
@@ -78,6 +82,8 @@ void Dif2() {
 }
 
 void countPositiveValues() {
+	k = 0;
+
 	__m256 mask = _mm256_set_ps(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
 	//Calculate count
 	for (int j = 0; j < SIZE / NUMBER_FLOAT; j++) {
@@ -86,10 +92,9 @@ void countPositiveValues() {
 
 		float *p = (float*)&and;
 		for (int i = 0; i < NUMBER_FLOAT; i++) {
-			if (*p != 0x80000000) {
+			if (*(p+i) != 0x80000000) {
 				k++;
 			}
-			p++;
 		}
 		
 	}
@@ -101,33 +106,39 @@ void countPositiveValues() {
 //esta mal
 void Sub() {
 	//inicalizacion del vector V
+	unsigned int index = 0;
 	v = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
-	__m256 kIntrisincs = _mm256_set_ps(k, k, k, k, k, k, k, k);
+	__m256 kIntrisincs = _mm256_set_ps((float)k, (float)k, (float)k, (float)k, (float)k, (float)k, (float)k, (float)k);
 	for (int i = 0; i < (SIZE - 1)/ NUMBER_FLOAT; i++) {
 		__m256 value = *(__m256*)&r[i * NUMBER_FLOAT];
 		__m256 mult = _mm256_mul_ps(kIntrisincs, value);
 
 		float* p = (float*)&mult;
 		for (int j = 0; j < NUMBER_FLOAT; j++) {
-			v[i + j] = *p;
+			v[i + j + index] = *(p+j);
+			index++;
 		}
 
 	}
 
 	//codigo del programa
+	index = 0;
 	s = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
 	for (int i = 0; i < (SIZE - 1) / NUMBER_FLOAT; i++) {
-		__m256 valueV = *(__m256*)&v[i*8];
-		__m256 valueU = *(__m256*)&u[i*8];
+		__m256 valueV = *(__m256*)&v[i*NUMBER_FLOAT];
+		__m256 valueU = *(__m256*)&u[i*NUMBER_FLOAT];
 		__m256 sub = _mm256_sub_ps(valueV, valueU);
 
+		//mal
 		float* p = (float*)&sub;
 		for (int j = 0; j < NUMBER_FLOAT; j++) {
-			s[i + j] = *p;
-		}
+			s[i + j + index] = *(p+j);
 
-		if (PRINT_FUNCTIONS)
-			printf("La resta es %f\n", s[i]);
+			if (PRINT_FUNCTIONS)
+				printf("La resta es %f\n", s[i + j + index]);
+
+			index++;
+		}
 	}
 	removeVector(v);
 	removeVector(s);
@@ -145,7 +156,7 @@ double timer(void(*function)(void)) {
 	// Compute the elapsed time in seconds
 	dElapsedTimeS = (tEnd.QuadPart - tStart.QuadPart) / (double)frequency.QuadPart;
 	// Print the elapsed time
-	if (PRINT_TIMER)
+	if (PRINT_TIMER_FUNCTIONS)
 		printf("Elapsed time in seconds: %f\n", dElapsedTimeS);
 	// Return the elapsed time if it'll util
 	return dElapsedTimeS;
@@ -163,6 +174,9 @@ void generateFile(double* times, double average, double std_deviation) {
 }
 
 int main() {
+	time_t ti;
+	srand((unsigned)time(&ti)); // Información sobre srand https://www.tutorialspoint.com/c_standard_library/c_function_srand.htm
+
 	double times[NTIMES];
 	double average, variance, std_deviation, sum = 0, sum1 = 0;
 
@@ -171,8 +185,11 @@ int main() {
 		w = createVector();
 		t = createVector();
 
-		times[i] = /*timer(Dif2) +*/ timer(countPositiveValues) /*+ timer(Sub)*/;
+		times[i] = timer(Dif2) + timer(countPositiveValues) + timer(Sub);
 		sum += times[i];
+
+		if (PRINT_TIMER_FUNCTIONS)
+			printf("Elapsed time in seconds: %f\n", times[0]);
 
 		removeVector(u);
 		removeVector(w);
@@ -192,4 +209,6 @@ int main() {
 	printf("La desviacion tipica de tiempos es: %f\r\n", std_deviation);
 
 	generateFile(times, average, std_deviation);
+
+	/*free(times);*/
 }
