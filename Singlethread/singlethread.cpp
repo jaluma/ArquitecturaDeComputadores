@@ -13,10 +13,11 @@
 using namespace std;
 // Include required header files
 
-#define NTIMES						10								// Number of repetitions to get suitable times
+#define NTIMES						10							// Number of repetitions to get suitable times
 #define SIZE						(1024*1024)					// Number of elements in the array
 #define GET_VARIABLE_NAME(Variable)	(#Variable)
 #define PRINT_FUNCTIONS				false
+#define PRINT_TIMER_FUNCTION		false
 #define PRINT_TIMER					true
 
 // Timer
@@ -112,7 +113,7 @@ double timer(void(*function)(void)) {
 	// Compute the elapsed time in seconds
 	dElapsedTimeS = (tEnd.QuadPart - tStart.QuadPart) / (double)frequency.QuadPart;
 	// Print the elapsed time
-	if (PRINT_TIMER)
+	if (PRINT_TIMER_FUNCTION)
 		printf("Elapsed time in seconds: %f\n", dElapsedTimeS);
 	// Return the elapsed time if it'll util
 	return dElapsedTimeS;
@@ -145,6 +146,9 @@ int main() {
 
 		times[i] = timer(Dif2) + timer(countPositiveValues) + timer(Sub);
 		sum += times[i];
+
+		if (PRINT_TIMER)
+			printf("Elapsed time in seconds: %f\n", times[i]);
 
 		removeVector(u);
 		removeVector(w);
