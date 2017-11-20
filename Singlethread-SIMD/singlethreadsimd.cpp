@@ -13,11 +13,12 @@
 using namespace std;
 // Include required header files
 
-#define NTIMES						10								// Number of repetitions to get suitable times
-#define SIZE						1024/*(1024*1024)*/						// Number of elements in the array
+#define TIMES						10
+#define NTIMES						200								// Number of repetitions to get suitable times
+#define SIZE						(1024*1024)						// Number of elements in the array
 #define GET_VARIABLE_NAME(Variable)	(#Variable)
 #define NUMBER_FLOAT				sizeof(__m256) / sizeof(float)
-#define PRINT_FUNCTIONS				true
+#define PRINT_FUNCTIONS				false
 #define PRINT_TIMER_FUNCTIONS		false
 #define PRINT_TIMER					true
 
@@ -140,8 +141,8 @@ void Sub() {
 			index++;
 		}
 	}
+	//eliminar de  memoria el vector V
 	removeVector(v);
-	removeVector(s);
 }
 
 double timer(void(*function)(void)) {
@@ -178,37 +179,42 @@ int main() {
 	srand((unsigned)time(&ti)); // Información sobre srand https://www.tutorialspoint.com/c_standard_library/c_function_srand.htm
 
 	double times[NTIMES];
-	double average, variance, std_deviation, sum = 0, sum1 = 0;
 
-	for (int i = 0; i < NTIMES; i++) {
-		u = createVector();
-		w = createVector();
-		t = createVector();
+	for (int j = 0; j < TIMES; j++) {
+		double average, variance, std_deviation, sum = 0, sum1 = 0;
 
-		times[i] = timer(Dif2) + timer(countPositiveValues) + timer(Sub);
-		sum += times[i];
+		for (int i = 0; i < NTIMES; i++) {
+			u = createVector();
+			w = createVector();
+			t = createVector();
 
-		if (PRINT_TIMER_FUNCTIONS)
-			printf("Elapsed time in seconds: %f\n", times[0]);
+			times[i] = timer(Dif2) + timer(countPositiveValues) + timer(Sub);
+			sum += times[i];
 
-		removeVector(u);
-		removeVector(w);
-		removeVector(t);
+			if (PRINT_TIMER)
+				printf("Elapsed time in seconds: %f\n", times[0]);
+
+			removeVector(u);
+			removeVector(w);
+			removeVector(t);
+			removeVector(s);
+			removeVector(r);
+		}
+
+		average = sum / (double)NTIMES;
+
+		for (int i = 0; i < NTIMES; i++) {
+			sum1 = sum1 + pow((times[i] - average), 2);
+		}
+
+		variance = sum1 / (double)NTIMES;
+		std_deviation = sqrt(variance);
+
+		printf("La media de tiempos es: %f\r\n", average);
+		printf("La desviacion tipica de tiempos es: %f\r\n", std_deviation);
+
+		generateFile(times, average, std_deviation);
 	}
-
-	average = sum / (double)NTIMES;
-
-	for (int i = 0; i < NTIMES; i++) {
-		sum1 = sum1 + pow((times[i] - average), 2);
-	}
-
-	variance = sum1 / (double)NTIMES;
-	std_deviation = sqrt(variance);
-
-	printf("La media de tiempos es: %f\r\n", average);
-	printf("La desviacion tipica de tiempos es: %f\r\n", std_deviation);
-
-	generateFile(times, average, std_deviation);
 
 	/*free(times);*/
 }
