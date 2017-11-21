@@ -61,15 +61,15 @@ void Dif2() {
 	r = (float *)_aligned_malloc((SIZE-1) * sizeof(float), sizeof(__m256i));
 	//Inicializamos una variable con el valor 2
 	__m256 number2 = _mm256_set_ps(2, 2, 2, 2, 2, 2, 2, 2);
-	//inicializamos una variable donde meter dif2
-	__m256 value = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));// 256 bits type, storing sixteen 32 bit integers
-	__m256 valuei = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
-	__m256 valuei_minus_1 = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
+	////inicializamos una variable donde meter dif2
+	//__m256 value = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));// 256 bits type, storing sixteen 32 bit integers
+	//__m256 valuei = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
+	//__m256 valuei_minus_1 = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
 
 	for (int i = 0; i < (SIZE - 1) / NUMBER_FLOAT; i++) {
 		__m256 valuei = *(__m256 *)&u[(i+1) * NUMBER_FLOAT];
 		__m256 valuei_minus_1 = *(__m256 *)&u[i * NUMBER_FLOAT];
-		value = _mm256_sub_ps(valuei, valuei_minus_1);
+		__m256 value = _mm256_sub_ps(valuei, valuei_minus_1);
 		value = _mm256_div_ps(value, number2);
 
 		float *p = (float*)&value;							// Pointer p points to the first 32 integer in the packet
@@ -192,7 +192,7 @@ int main() {
 			sum += times[i];
 
 			if (PRINT_TIMER)
-				printf("Elapsed time in seconds: %f\n", times[0]);
+				printf("Elapsed time in seconds: %f\n", times[i]);
 
 			removeVector(u);
 			removeVector(w);
