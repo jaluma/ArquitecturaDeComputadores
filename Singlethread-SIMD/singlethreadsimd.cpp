@@ -74,7 +74,7 @@ void Dif2() {
 
 		float *p = (float*)&value;							// Pointer p points to the first 32 integer in the packet
 		for (int j = 0; j < NUMBER_FLOAT; j++) {
-			r[i + j] = *p;
+			r[i*NUMBER_FLOAT + j] = *p;
 			p++;
 			if (PRINT_FUNCTIONS)
 				printf("La diferencia entre dos valores es %f\n", r[i+j]);
@@ -116,8 +116,7 @@ void Sub() {
 
 		float* p = (float*)&mult;
 		for (int j = 0; j < NUMBER_FLOAT; j++) {
-			v[i + j + index] = *(p+j);
-			index++;
+			v[i * NUMBER_FLOAT + j] = *(p+j);
 		}
 
 	}
@@ -133,12 +132,10 @@ void Sub() {
 		//mal
 		float* p = (float*)&sub;
 		for (int j = 0; j < NUMBER_FLOAT; j++) {
-			s[i + j + index] = *(p+j);
+			s[i * NUMBER_FLOAT + j] = *(p+j);
 
 			if (PRINT_FUNCTIONS)
 				printf("La resta es %f\n", s[i + j + index]);
-
-			index++;
 		}
 	}
 	//eliminar de  memoria el vector V
@@ -169,7 +166,7 @@ void generateFile(double* times, double average, double std_deviation) {
 
 	for (int i = 0; i < NTIMES; i++) {
 		archivo << times[i];
-		archivo << "\n";
+		archivo << ";";
 	}
 	archivo.close();
 }

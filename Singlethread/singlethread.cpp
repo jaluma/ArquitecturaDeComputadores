@@ -126,7 +126,7 @@ void generateFile(double* times, double average, double std_deviation) {
 
 	for (int i = 0; i < NTIMES; i++) {
 		archivo << times[i];
-		archivo << "\n";
+		archivo << ";";
 	}
 	archivo.close();
 }
