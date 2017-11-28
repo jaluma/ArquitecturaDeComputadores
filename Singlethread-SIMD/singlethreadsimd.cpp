@@ -16,7 +16,6 @@ using namespace std;
 #define TIMES						10
 #define NTIMES						200								// Number of repetitions to get suitable times
 #define SIZE						(1024*1024)						// Number of elements in the array
-#define GET_VARIABLE_NAME(Variable)	(#Variable)
 #define NUMBER_FLOAT				sizeof(__m256) / sizeof(float)
 #define PRINT_FUNCTIONS				false
 #define PRINT_TIMER_FUNCTIONS		false
@@ -29,9 +28,9 @@ LARGE_INTEGER tEnd;
 double dElapsedTimeS;
 
 //definicion de los atributos a usar en las funciones
-float* u;		//vector usado en Dif2
-float* t;		//vector usado en Sub
-float* w;		//vector usado en ContarPositivos	
+float* u;			//vector usado en Dif2
+float* t;			//vector usado en Sub
+float* w;			//vector usado en ContarPositivos	
 
 //atributos de return
 float* r;			// vector resultante de op1
@@ -152,36 +151,43 @@ double timer(void(*function)(void)) {
 	return dElapsedTimeS;
 }
 
-void generateFile(double* times, double average, double std_deviation) {
-	string nameFile = "times_" + to_string(average) + "_" + to_string(std_deviation) + ".csv";
+// genera un archivo *.csv con los tiempos que devuelve la funcion timer
+const string currentDateTime() {
+	time_t now = time(0);
+	struct tm  tstruct;
+	char buf[80];
+	localtime_s(&tstruct, &now);
+	strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+	return buf;
+}
+
+void generateFile(double* times) {
+	string nameFile = currentDateTime() + ".csv";
 	ofstream archivo(nameFile);
 
-	for (int i = 0; i < NTIMES; i++) {
+	for (int i = 0; i < TIMES; i++) {
 		archivo << times[i];
 		archivo << ";";
 	}
 	archivo.close();
 }
 
+//funcion main
 int main() {
 	time_t ti;
 	srand((unsigned)time(&ti)); // Información sobre srand https://www.tutorialspoint.com/c_standard_library/c_function_srand.htm
 
-	double times[NTIMES];
+	double times[TIMES];
 
 	for (int j = 0; j < TIMES; j++) {
-		double average, variance, std_deviation, sum = 0, sum1 = 0;
-
+		times[j] = 0;			//aseguramos valores reales
 		for (int i = 0; i < NTIMES; i++) {
 			u = createVector();
 			w = createVector();
 			t = createVector();
 
-			times[i] = timer(Dif2) + timer(countPositiveValues) + timer(Sub);
-			sum += times[i];
-
-			if (PRINT_TIMER)
-				printf("Elapsed time in seconds: %f\n", times[i]);
+			times[j] += timer(Dif2) + timer(countPositiveValues) + timer(Sub);
 
 			removeVector(u);
 			removeVector(w);
@@ -190,20 +196,8 @@ int main() {
 			removeVector(r);
 		}
 
-		average = sum / (double)NTIMES;
-
-		for (int i = 0; i < NTIMES; i++) {
-			sum1 = sum1 + pow((times[i] - average), 2);
-		}
-
-		variance = sum1 / (double)NTIMES;
-		std_deviation = sqrt(variance);
-
-		printf("La media de tiempos es: %f\r\n", average);
-		printf("La desviacion tipica de tiempos es: %f\r\n", std_deviation);
-
-		generateFile(times, average, std_deviation);
+		if (PRINT_TIMER)
+			printf("Elapsed total time in seconds: %f\n", times[j]);
 	}
-
-	/*free(times);*/
+	generateFile(times);
 }
