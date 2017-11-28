@@ -11,12 +11,11 @@
 #include <time.h>
 
 using namespace std;
-// Include required header files
+// definicion de directivas
 
 #define TIMES						10
 #define NTIMES						200							// Number of repetitions to get suitable times
 #define SIZE						(1024*1024)					// Number of elements in the array
-#define GET_VARIABLE_NAME(Variable)	(#Variable)
 #define PRINT_FUNCTIONS				false
 #define PRINT_TIMER_FUNCTION		false
 #define PRINT_TIMER					true
@@ -42,11 +41,6 @@ float* createVector() {
 	float* vector = (float *)malloc(sizeof(float) * SIZE);
 
 	for (int i = 0; i < SIZE; i++) {
-		//float random = ((float)rand()) / (float)RAND_MAX;
-		//float diff = 1 - (-1);
-		//float r = random * diff;
-		//vector[i] = (-1) + r;	// rango de (0,2) - 1 ==> (-1, 1)
-
 		float r = -1 + 2 * float((double)rand() / (double)(RAND_MAX)); // Aquí se explica por qué hacerlo con double: https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c#comment56659626_13409133
 		vector[i] = r;
 	}
@@ -92,7 +86,7 @@ void Sub() {
 	//codigo del programa
 	s = (float *)malloc(sizeof(float) * (SIZE - 1));
 	for (int i = 0; i < SIZE - 1; i++) {
-		s[i] = v[i] - u[i];
+		s[i] = v[i] - t[i];
 		if (PRINT_FUNCTIONS)
 			printf("La resta es %f\n", s[i]);
 	 }

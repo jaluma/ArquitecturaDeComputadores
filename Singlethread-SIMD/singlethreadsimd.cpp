@@ -11,7 +11,7 @@
 #include <time.h>
 
 using namespace std;
-// Include required header files
+// definicion de directivas
 
 #define TIMES						10
 #define NTIMES						200								// Number of repetitions to get suitable times
@@ -28,10 +28,10 @@ LARGE_INTEGER tStart;
 LARGE_INTEGER tEnd;
 double dElapsedTimeS;
 
-float* u;
-float* w;
-float* t;
-float* v;
+//definicion de los atributos a usar en las funciones
+float* u;		//vector usado en Dif2
+float* t;		//vector usado en Sub
+float* w;		//vector usado en ContarPositivos	
 
 //atributos de return
 float* r;			// vector resultante de op1
@@ -42,10 +42,6 @@ float* createVector() {
 	float* vector = (float *)_aligned_malloc(SIZE * sizeof(float), sizeof(__m256i));
 
 	for (int i = 0; i < SIZE; i++) {
-		//float random = ((float)rand()) / (float)RAND_MAX;
-		//float diff = 1 - (-1);
-		//float r = random * diff;
-		//vector[i] = (-1) + r;	// rango de (0,2) - 1 ==> (-1, 1)
 		float r = -1 + 2 * float((double)rand() / (double)(RAND_MAX)); // Aquí se explica por qué hacerlo con double: https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c#comment56659626_13409133
 		vector[i] = r;
 	}
@@ -61,10 +57,6 @@ void Dif2() {
 	r = (float *)_aligned_malloc((SIZE-1) * sizeof(float), sizeof(__m256i));
 	//Inicializamos una variable con el valor 2
 	__m256 number2 = _mm256_set_ps(2, 2, 2, 2, 2, 2, 2, 2);
-	////inicializamos una variable donde meter dif2
-	//__m256 value = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));// 256 bits type, storing sixteen 32 bit integers
-	//__m256 valuei = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
-	//__m256 valuei_minus_1 = *(__m256 *)_aligned_malloc((SIZE - 1) * sizeof(int), sizeof(__m256i));
 
 	for (int i = 0; i < (SIZE - 1) / NUMBER_FLOAT; i++) {
 		__m256 valuei = *(__m256 *)&u[(i+1) * NUMBER_FLOAT];
@@ -108,7 +100,7 @@ void countPositiveValues() {
 void Sub() {
 	//inicalizacion del vector V
 	unsigned int index = 0;
-	v = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
+	float* v = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
 	__m256 kIntrisincs = _mm256_set_ps((float)k, (float)k, (float)k, (float)k, (float)k, (float)k, (float)k, (float)k);
 	for (int i = 0; i < (SIZE - 1)/ NUMBER_FLOAT; i++) {
 		__m256 value = *(__m256*)&r[i * NUMBER_FLOAT];
@@ -126,8 +118,8 @@ void Sub() {
 	s = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
 	for (int i = 0; i < (SIZE - 1) / NUMBER_FLOAT; i++) {
 		__m256 valueV = *(__m256*)&v[i*NUMBER_FLOAT];
-		__m256 valueU = *(__m256*)&u[i*NUMBER_FLOAT];
-		__m256 sub = _mm256_sub_ps(valueV, valueU);
+		__m256 valueT = *(__m256*)&t[i*NUMBER_FLOAT];
+		__m256 sub = _mm256_sub_ps(valueV, valueT);
 
 		//mal
 		float* p = (float*)&sub;
