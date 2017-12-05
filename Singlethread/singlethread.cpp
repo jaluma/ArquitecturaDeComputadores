@@ -139,5 +139,4 @@ int main() {
 		if (PRINT_TIMER)
 			printf("Elapsed total time in seconds: %f\n", times[j]);
 	}
-	free(times);
 }
