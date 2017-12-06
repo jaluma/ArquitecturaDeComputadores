@@ -10,6 +10,7 @@
 #include <string>
 #include <time.h>
 #include <thread>
+#include <atomic>
 
 using namespace std;
 // definicion de directivas
@@ -24,7 +25,6 @@ unsigned int getNumbersProcessor() {
 }
 
 #define NTHREADS					getNumbersProcessor()
-#define THREADS_USABLES				NTHREADS - threadsUsed
 #define TIMES						10
 #define NTIMES						200							// Number of repetitions to get suitable times
 #define SIZE						(1024*1024)					// Number of elements in the array
@@ -32,16 +32,7 @@ unsigned int getNumbersProcessor() {
 #define PRINT_TIMER_FUNCTION		false
 #define PRINT_TIMER					true
 
-struct CalculateTime
-{
-	void(*function)(void) = NULL;
-	double timer = 0;
-
-};
-
 //Threads
-unsigned int threadsUsed = 0;
-struct CalculateTime ct;
 HANDLE* hThreadArray = new HANDLE[NTHREADS];
 
 // Timer
@@ -56,10 +47,12 @@ float* t;			//vector usado en Sub
 float* w;			//vector usado en ContarPositivos
 float* v;			//vector resultante de k * Dif2()
 
-					//atributos de return
-float* r;			// vector resultante de op1
+//atributos de return
+//std::atomic<float*> r;				// vector resultante de op1
+float* r;
 unsigned int k;		//numero de positivos op2
-float* s;			// vector resultante de op3
+//std::atomic<float*> s;				// vector resultante de op3
+float* s;
 
 					//devuelve un vector de tamaño SIZE
 float* createVector() {
@@ -77,25 +70,17 @@ void removeVector(float* vector) {
 	std::free(vector);
 }
 
+//espera por todos los threads creados
 void wait() {
-	WaitForMultipleObjects(threadsUsed, hThreadArray, true, 0);
-	threadsUsed = 0;
+	for (int i = 0; i < NTHREADS; i++)
+		WaitForSingleObject(hThreadArray[i], INFINITE);
 }
 
-void generateThread(DWORD WINAPI function(LPVOID a), LPVOID param) {
-	if (threadsUsed >= NTHREADS) {
-		wait();
-	}
-	else {
-		hThreadArray[threadsUsed] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)function, param, 0, NULL);
-		threadsUsed++;
-	}
-}
-
-//metodos usados para los procedimientos en MultiThread
+////metodos usados para los procedimientos en MultiThread
 DWORD WINAPI Dif2Proc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
-	for (int i = indexInt; i < indexInt + (SIZE / THREADS_USABLES) - 1; i++) {
+	unsigned int tamaño = (SIZE / NTHREADS);
+	for (int i = indexInt; i < indexInt + tamaño - 1; i++) {
 		r[i] = (u[i + 1] - u[i]) / 2.0;
 
 		if (PRINT_FUNCTIONS)
@@ -106,7 +91,8 @@ DWORD WINAPI Dif2Proc(LPVOID index) {			//int index
 
 DWORD WINAPI CountPositiveValuesProc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
-	for (int i = indexInt; i < indexInt + (SIZE / THREADS_USABLES); i++) {
+	unsigned int tamaño = (SIZE / NTHREADS);
+	for (int i = indexInt; i < indexInt + tamaño; i++) {
 		if (w[i] >= 0.0)
 			k++;
 
@@ -116,17 +102,11 @@ DWORD WINAPI CountPositiveValuesProc(LPVOID index) {			//int index
 	return 0;
 }
 
-DWORD WINAPI MultProc(LPVOID index) {			//int index
-	int indexInt = *reinterpret_cast<int*>(index);
-	for (int i = indexInt; i < indexInt + (SIZE / THREADS_USABLES) - 1; i++) {
-		v[i] = k * r[i];
-	}
-	return 0;
-}
-
 DWORD WINAPI SubProc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
-	for (int i = indexInt; i < indexInt + (SIZE / THREADS_USABLES); i++) {
+	unsigned int tamaño = (SIZE / NTHREADS);
+	for (int i = indexInt; i < indexInt + tamaño - 1; i++) {
+		v[i] = k * r[i];
 		s[i] = v[i] - t[i];
 
 		if (PRINT_FUNCTIONS)
@@ -137,55 +117,48 @@ DWORD WINAPI SubProc(LPVOID index) {			//int index
 
 void Dif2() {
 
-	unsigned int tamaño = SIZE / THREADS_USABLES;
+	unsigned int tamaño = SIZE / NTHREADS;
 
-	for (unsigned int i = 0; i < THREADS_USABLES; i++) {
+	for (unsigned int i = 0; i < NTHREADS; i++) {
 		int position = i*tamaño;
-		generateThread(Dif2Proc, &position);
+		hThreadArray[i] = CreateThread(NULL, 0, Dif2Proc, &position, 0, NULL);
 	}
-
+	wait();
 }
 
 void CountPositiveValues() {
 	k = 0;
 
-	unsigned int tamaño = SIZE / THREADS_USABLES;
+	unsigned int tamaño = SIZE / NTHREADS;
 
-	for (unsigned int i = 0; i < THREADS_USABLES; i++) {
+	for (unsigned int i = 0; i < NTHREADS; i++) {
 		int position = i*tamaño;
-		generateThread(CountPositiveValuesProc, &position);
+		hThreadArray[i] = CreateThread(NULL, 0, CountPositiveValuesProc, &position, 0, NULL);
 	}
+	wait();
 }
 
 void Sub() {
 	//inicalizacion del vector V
-	unsigned int tamaño = SIZE / THREADS_USABLES;
-
-	for (unsigned int i = 0; i < THREADS_USABLES; i++) {
-		int position = i*tamaño;
-		generateThread(MultProc, &position);
-	}
+	unsigned int tamaño = SIZE / NTHREADS;
 
 	//codigo del programa
-	tamaño = SIZE / THREADS_USABLES;
-
-	for (int i = 0; i < THREADS_USABLES; i++) {
+	for (unsigned int i = 0; i < NTHREADS; i++) {
 		int position = i*tamaño;
-		generateThread(SubProc, &position);
+		hThreadArray[i] = CreateThread(NULL, 0, SubProc, &position, 0, NULL);
 	}
 	//eliminar de  memoria el vector V
 	removeVector(v);
 }
 
-
 // funcion usada para calcular el tiempo de la funcion pasada como parametro
-DWORD WINAPI timer(LPVOID arg) {
+double timer(void(*function)(void)) {
 	// Get clock frequency in Hz
 	QueryPerformanceFrequency(&frequency);
 	// Get initial clock count
 	QueryPerformanceCounter(&tStart);
 	// Code to be measured
-	ct.function();
+	function();
 	// Get final clock count
 	QueryPerformanceCounter(&tEnd);
 	// Compute the elapsed time in seconds
@@ -194,9 +167,7 @@ DWORD WINAPI timer(LPVOID arg) {
 	if (PRINT_TIMER_FUNCTION)
 		printf("Elapsed time in seconds: %f\n", dElapsedTimeS);
 	// Return the elapsed time if it'll util
-	ct.timer += dElapsedTimeS;
-
-	return 0;
+	return dElapsedTimeS;
 }
 
 // funcion main del programa singleThread
@@ -219,30 +190,12 @@ int main() {
 			v = (float *)malloc(sizeof(float) * (SIZE - 1));
 			s = (float *)malloc(sizeof(float) * (SIZE - 1));
 
-			ct.function = Dif2;
-			timer(NULL);
-			ct.function = CountPositiveValues;
-			timer(NULL);
+			times[j] += timer(Dif2);
 			wait();
-			ct.function = Sub;
-			timer(NULL);
-			times[j] = ct.timer;
+			times[j] += timer(CountPositiveValues);
 			wait();
-			////usado para crear el hilo
-			//ct.timer = times[j];
-
-			////ct.function = Dif2;
-			//generateThread(timer, Dif2);
-
-			////ct.function = countPositiveValues;
-			//generateThread(timer, countPositiveValues);
-
-			//wait();
-
-			////ct.function = Sub;
-			//generateThread(timer, Sub);
-
-			//wait();
+			times[j] += timer(Sub);
+			wait();
 
 			removeVector(u);
 			removeVector(w);
@@ -255,25 +208,3 @@ int main() {
 			printf("Elapsed total time in seconds: %f\n", times[j]);
 	}
 }
-
-// genera un archivo *.csv con los tiempos que devuelve la funcion timer
-//const string currentDateTime() {
-//	time_t now = time(0);
-//	struct tm  tstruct;
-//	char buf[80];
-//	localtime_s(&tstruct, &now);
-//	strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
-//
-//	return buf;
-//}
-//
-//void generateFile(double* times) {
-//	string nameFile = currentDateTime() + ".csv";
-//	ofstream archivo(nameFile);
-//
-//	for (int i = 0; i < TIMES; i++) {
-//		archivo << times[i];
-//		archivo << ";";
-//	}
-//	archivo.close();
-//}
