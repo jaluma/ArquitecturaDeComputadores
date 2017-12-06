@@ -95,9 +95,6 @@ DWORD WINAPI CountPositiveValuesProc(LPVOID index) {			//int index
 	for (int i = indexInt; i < indexInt + tamaño; i++) {
 		if (w[i] >= 0.0)
 			k++;
-
-		if (PRINT_FUNCTIONS)
-			printf("El contador de numeros positivos es %d\n", k);
 	}
 	return 0;
 }
@@ -135,6 +132,9 @@ void CountPositiveValues() {
 		int position = i*tamaño;
 		hThreadArray[i] = CreateThread(NULL, 0, CountPositiveValuesProc, &position, 0, NULL);
 	}
+
+	if (PRINT_FUNCTIONS)
+		printf("El contador de numeros positivos es %d\n", k);
 	wait();
 }
 
