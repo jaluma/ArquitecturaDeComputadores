@@ -146,28 +146,6 @@ double timer(void(*function)(void)) {
 	return dElapsedTimeS;
 }
 
-// genera un archivo *.csv con los tiempos que devuelve la funcion timer
-const string currentDateTime() {
-	time_t now = time(0);
-	struct tm  tstruct;
-	char buf[80];
-	localtime_s(&tstruct, &now);
-	strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
-
-	return buf;
-}
-
-void generateFile(double* times) {
-	string nameFile = currentDateTime() + ".csv";
-	ofstream archivo(nameFile);
-
-	for (int i = 0; i < TIMES; i++) {
-		archivo << times[i];
-		archivo << ";";
-	}
-	archivo.close();
-}
-
 //funcion main
 int main() {
 	time_t ti;
@@ -194,5 +172,4 @@ int main() {
 		if (PRINT_TIMER)
 			printf("Elapsed total time in seconds: %f\n", times[j]);
 	}
-	generateFile(times);
 }
