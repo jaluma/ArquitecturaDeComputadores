@@ -28,7 +28,7 @@ unsigned int getNumbersProcessor() {
 #define TIMES						10
 #define NTIMES						200							// Number of repetitions to get suitable times
 #define SIZE						(1024*1024)					// Number of elements in the array
-#define PRINT_FUNCTIONS				false
+#define PRINT_FUNCTIONS				true
 #define PRINT_TIMER_FUNCTION		false
 #define PRINT_TIMER					true
 
@@ -46,11 +46,11 @@ double dElapsedTimeS;
 float* u;			//vector usado en Dif2
 float* t;			//vector usado en Sub
 float* w;			//vector usado en ContarPositivos
-float* v;			//vector resultante de k * Dif2()
 
 //atributos de return
 float* r;			// vector resultante de op1
 unsigned int k;		//numero de positivos op2
+unsigned int* arrayK;	//almacena el valor devuelto de positivos por cada hilo
 float* s;			// vector resultante de op3
 
 //devuelve un vector de tamaño SIZE
@@ -71,8 +71,7 @@ void removeVector(float* vector) {
 
 //espera por todos los threads creados
 void wait() {
-	for (int i = 0; i < NTHREADS; i++)
-		WaitForSingleObject(hThreadArray[i], INFINITE);
+	WaitForMultipleObjects(NTHREADS, hThreadArray, true, INFINITE);
 }
 
 //genera la lista de indices para cada hilo
@@ -101,7 +100,7 @@ DWORD WINAPI CountPositiveValuesProc(LPVOID index) {			//int index
 	unsigned int tamaño = (SIZE / NTHREADS);
 	for (int i = indexInt; i < indexInt + tamaño; i++) {
 		if (w[i] >= 0.0)
-			k++;
+			arrayK[indexInt / tamaño]++;
 	}
 	return 0;
 }
@@ -110,8 +109,7 @@ DWORD WINAPI SubProc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
 	unsigned int tamaño = (SIZE / NTHREADS);
 	for (int i = indexInt; i < indexInt + tamaño - 1; i++) {
-		v[i] = k * r[i];
-		s[i] = v[i] - t[i];
+		s[i] = (k * r[i]) - t[i];
 
 		if (PRINT_FUNCTIONS)
 			printf("La resta es %f\n", s[i]);
@@ -129,16 +127,20 @@ void Dif2() {
 }
 
 void CountPositiveValues() {
-	k = 0;
-
 	for (unsigned int i = 0; i < NTHREADS; i++) {
+		arrayK[i] = 0;
 		hThreadArray[i] = CreateThread(NULL, 0, CountPositiveValuesProc, &sizes[i], 0, NULL);
 	}
 
+	wait();
+	k = 0;
+
+	for (unsigned int i = 0; i < NTHREADS; i++) {
+		k += arrayK[i];
+	}
+	
 	if (PRINT_FUNCTIONS)
 		printf("El contador de numeros positivos es %d\n", k);
-
-	wait();
 }
 
 void Sub() {
@@ -184,16 +186,18 @@ int main() {
 			w = createVector();
 			t = createVector();
 
+			//vectores aux
+			arrayK = (unsigned int *)malloc(sizeof(unsigned int) * (NTHREADS));
+
 			//vectores resultantes
 			r = (float *)malloc(sizeof(float) * (SIZE - 1));
-			v = (float *)malloc(sizeof(float) * (SIZE - 1));
 			s = (float *)malloc(sizeof(float) * (SIZE - 1));
 
 			times[j] += timer(Dif2);
 			times[j] += timer(CountPositiveValues);
 			times[j] += timer(Sub);
 
-			removeVector(v);
+			std::free(arrayK);
 			removeVector(u);
 			removeVector(w);
 			removeVector(t);
