@@ -49,13 +49,11 @@ float* w;			//vector usado en ContarPositivos
 float* v;			//vector resultante de k * Dif2()
 
 //atributos de return
-//std::atomic<float*> r;				// vector resultante de op1
-float* r;
+float* r;			// vector resultante de op1
 unsigned int k;		//numero de positivos op2
-//std::atomic<float*> s;				// vector resultante de op3
-float* s;
+float* s;			// vector resultante de op3
 
-					//devuelve un vector de tamaño SIZE
+//devuelve un vector de tamaño SIZE
 float* createVector() {
 	float* vector = (float *)malloc(sizeof(float) * SIZE);
 
@@ -77,6 +75,7 @@ void wait() {
 		WaitForSingleObject(hThreadArray[i], INFINITE);
 }
 
+//genera la lista de indices para cada hilo
 void generateSizes() {
 	sizes = (int *)malloc(sizeof(int) * NTHREADS);
 	for (int i = 0; i < NTHREADS; i++) {
@@ -120,6 +119,8 @@ DWORD WINAPI SubProc(LPVOID index) {			//int index
 	return 0;
 }
 
+
+//funciones usadas para crear los hilos necesarios
 void Dif2() {
 	for (unsigned int i = 0; i < NTHREADS; i++) {
 		hThreadArray[i] = CreateThread(NULL, 0, Dif2Proc, &sizes[i], 0, NULL);
@@ -136,16 +137,16 @@ void CountPositiveValues() {
 
 	if (PRINT_FUNCTIONS)
 		printf("El contador de numeros positivos es %d\n", k);
+
 	wait();
 }
 
 void Sub() {
-	//inicalizacion del vector V
 	//codigo del programa
 	for (unsigned int i = 0; i < NTHREADS; i++) {
 		hThreadArray[i] = CreateThread(NULL, 0, SubProc, &sizes[i], 0, NULL);
 	}
-	//eliminar de  memoria el vector V
+	wait();
 }
 
 // funcion usada para calcular el tiempo de la funcion pasada como parametro
@@ -173,8 +174,7 @@ int main() {
 	srand((unsigned)time(&ti)); // Informacion sobre srand https://www.tutorialspoint.com/c_standard_library/c_function_srand.htm
 
 	double times[TIMES];
-
-	generateSizes();
+	generateSizes();		//generar la lista de indices
 
 	for (int j = 0; j < TIMES; j++) {
 		times[j] = 0;			//aseguramos valores reales
@@ -190,11 +190,8 @@ int main() {
 			s = (float *)malloc(sizeof(float) * (SIZE - 1));
 
 			times[j] += timer(Dif2);
-			wait();
 			times[j] += timer(CountPositiveValues);
-			wait();
 			times[j] += timer(Sub);
-			wait();
 
 			removeVector(v);
 			removeVector(u);
