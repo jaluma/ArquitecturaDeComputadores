@@ -5,9 +5,6 @@
 #include "immintrin.h"
 #include <stdio.h>
 #include <math.h>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include <time.h>
 
 using namespace std;
@@ -113,20 +110,18 @@ void Sub() {
 	}
 
 	//codigo del programa
-	index = 0;
 	s = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
 	for (int i = 0; i < (SIZE - 1) / NUMBER_FLOAT; i++) {
 		__m256 valueV = *(__m256*)&v[i*NUMBER_FLOAT];
 		__m256 valueT = *(__m256*)&t[i*NUMBER_FLOAT];
 		__m256 sub = _mm256_sub_ps(valueV, valueT);
 
-		//mal
 		float* p = (float*)&sub;
 		for (int j = 0; j < NUMBER_FLOAT; j++) {
 			s[i * NUMBER_FLOAT + j] = *(p+j);
 
 			if (PRINT_FUNCTIONS)
-				printf("La resta es %f\n", s[i + j + index]);
+				printf("La resta es %f\n", s[i + j]);
 		}
 	}
 	//eliminar de  memoria el vector V

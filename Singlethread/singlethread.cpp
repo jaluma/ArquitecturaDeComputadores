@@ -1,13 +1,8 @@
 // Single thread application
 
 #include <Windows.h>
-#include <intrin.h>
-#include "immintrin.h"
 #include <stdio.h>
 #include <math.h>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include <time.h>
 
 using namespace std;

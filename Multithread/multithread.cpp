@@ -1,16 +1,10 @@
 // MultiThread.cpp : Defines the entry point for the console application.
 
 #include <Windows.h>
-#include <intrin.h>
-#include "immintrin.h"
 #include <stdio.h>
 #include <math.h>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include <time.h>
 #include <thread>
-#include <atomic>
 
 using namespace std;
 // definicion de directivas
