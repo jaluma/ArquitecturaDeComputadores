@@ -11,7 +11,6 @@
 #include <time.h>
 #include <thread>
 #include <atomic>
-#include <array> 
 
 using namespace std;
 // definicion de directivas
@@ -46,15 +45,14 @@ double dElapsedTimeS;
 float* u;			//vector usado en Dif2
 float* t;			//vector usado en Sub
 float* w;			//vector usado en ContarPositivos
-std::array<std::atomic<float>, (SIZE - 1)> v;			//vector resultante de k * Dif2()
+float* v;			//vector resultante de k * Dif2()
 
 //atributos de return
-std::array<std::atomic<float>, (SIZE - 1)> r;				// vector resultante de op1
-//float* r;
-//unsigned int k;		//numero de positivos op2
-std::atomic<int> k;
-std::array<std::atomic<float>, (SIZE - 1)> s;				// vector resultante de op3
-//float* s;
+//std::atomic<float*> r;				// vector resultante de op1
+float* r;
+unsigned int k;		//numero de positivos op2
+//std::atomic<float*> s;				// vector resultante de op3
+float* s;
 
 					//devuelve un vector de tamaño SIZE
 float* createVector() {
@@ -72,45 +70,44 @@ void removeVector(float* vector) {
 	std::free(vector);
 }
 
-//esperar por todos los threads creados
+//espera por todos los threads creados
 void wait() {
-	for (unsigned int i = 0; i < NTHREADS; i++)
+	for (int i = 0; i < NTHREADS; i++)
 		WaitForSingleObject(hThreadArray[i], INFINITE);
 }
 
 ////metodos usados para los procedimientos en MultiThread
-static DWORD WINAPI Dif2Proc(LPVOID index) {			//int index
+DWORD WINAPI Dif2Proc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
 	unsigned int tamaño = (SIZE / NTHREADS);
-	for (unsigned int i = indexInt; i < indexInt + tamaño - 1; i++) {
-		//std::atomic_init((u[i + 1] - u[i]) / 2.0, i);
+	for (int i = indexInt; i < indexInt + tamaño - 1; i++) {
 		r[i] = (u[i + 1] - u[i]) / 2.0;
 
-		/*if (PRINT_FUNCTIONS)
-			printf("La diferencia entre dos valores es %f\n", r[i]);*/
+		if (PRINT_FUNCTIONS)
+			printf("La diferencia entre dos valores es %f\n", r[i]);
 	}
 	return 0;
 }
 
-static DWORD WINAPI CountPositiveValuesProc(LPVOID index) {			//int index
+DWORD WINAPI CountPositiveValuesProc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
 	unsigned int tamaño = (SIZE / NTHREADS);
-	for (unsigned int i = indexInt; i < indexInt + tamaño; i++) {
+	for (int i = indexInt; i < indexInt + tamaño; i++) {
 		if (w[i] >= 0.0)
 			k++;
 	}
 	return 0;
 }
 
-static DWORD WINAPI SubProc(LPVOID index) {			//int index
+DWORD WINAPI SubProc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
 	unsigned int tamaño = (SIZE / NTHREADS);
-	for (unsigned int i = indexInt; i < indexInt + tamaño - 1; i++) {
-		v[i] = k * r.at(i);
-		s[i] = v.at(i) - t[i];
+	for (int i = indexInt; i < indexInt + tamaño - 1; i++) {
+		v[i] = k * r[i];
+		s[i] = v[i] - t[i];
 
-		/*if (PRINT_FUNCTIONS)
-			printf("La resta es %f\n", s[i]);*/
+		if (PRINT_FUNCTIONS)
+			printf("La resta es %f\n", s[i]);
 	}
 	return 0;
 }
@@ -137,7 +134,7 @@ void CountPositiveValues() {
 	}
 
 	if (PRINT_FUNCTIONS)
-		printf("El contador de numeros positivos es %d\n", (int)k);
+		printf("El contador de numeros positivos es %d\n", k);
 	wait();
 }
 
@@ -151,8 +148,7 @@ void Sub() {
 		hThreadArray[i] = CreateThread(NULL, 0, SubProc, &position, 0, NULL);
 	}
 	//eliminar de  memoria el vector V
-	//removeVector(v);
-	wait();
+	removeVector(v);
 }
 
 // funcion usada para calcular el tiempo de la funcion pasada como parametro
@@ -190,9 +186,9 @@ int main() {
 			t = createVector();
 
 			//vectores resultantes
-			//r = (float *)malloc(sizeof(float) * (SIZE - 1));
-			//v = (float *)malloc(sizeof(float) * (SIZE - 1));
-			//s = (float *)malloc(sizeof(float) * (SIZE - 1));
+			r = (float *)malloc(sizeof(float) * (SIZE - 1));
+			v = (float *)malloc(sizeof(float) * (SIZE - 1));
+			s = (float *)malloc(sizeof(float) * (SIZE - 1));
 
 			times[j] += timer(Dif2);
 			wait();
@@ -204,8 +200,8 @@ int main() {
 			removeVector(u);
 			removeVector(w);
 			removeVector(t);
-			//removeVector(s);
-			//removeVector(r);
+			removeVector(s);
+			removeVector(r);
 		}
 
 		if (PRINT_TIMER)
