@@ -28,7 +28,7 @@ unsigned int getNumbersProcessor() {
 #define TIMES						10
 #define NTIMES						200							// Number of repetitions to get suitable times
 #define SIZE						(1024*1024)					// Number of elements in the array
-#define PRINT_FUNCTIONS				true
+#define PRINT_FUNCTIONS				false
 #define PRINT_TIMER_FUNCTION		false
 #define PRINT_TIMER					true
 
