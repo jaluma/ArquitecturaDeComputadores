@@ -34,6 +34,7 @@ unsigned int getNumbersProcessor() {
 
 //Threads
 HANDLE* hThreadArray = new HANDLE[NTHREADS];
+int* sizes;
 
 // Timer
 LARGE_INTEGER frequency;
@@ -76,6 +77,13 @@ void wait() {
 		WaitForSingleObject(hThreadArray[i], INFINITE);
 }
 
+void generateSizes() {
+	sizes = (int *)malloc(sizeof(int) * NTHREADS);
+	for (int i = 0; i < NTHREADS; i++) {
+		sizes[i] = i * (SIZE / NTHREADS);
+	}
+}
+
 ////metodos usados para los procedimientos en MultiThread
 DWORD WINAPI Dif2Proc(LPVOID index) {			//int index
 	int indexInt = *reinterpret_cast<int*>(index);
@@ -113,12 +121,8 @@ DWORD WINAPI SubProc(LPVOID index) {			//int index
 }
 
 void Dif2() {
-
-	unsigned int tamaño = SIZE / NTHREADS;
-
 	for (unsigned int i = 0; i < NTHREADS; i++) {
-		int position = i*tamaño;
-		hThreadArray[i] = CreateThread(NULL, 0, Dif2Proc, &position, 0, NULL);
+		hThreadArray[i] = CreateThread(NULL, 0, Dif2Proc, &sizes[i], 0, NULL);
 	}
 	wait();
 }
@@ -126,11 +130,8 @@ void Dif2() {
 void CountPositiveValues() {
 	k = 0;
 
-	unsigned int tamaño = SIZE / NTHREADS;
-
 	for (unsigned int i = 0; i < NTHREADS; i++) {
-		int position = i*tamaño;
-		hThreadArray[i] = CreateThread(NULL, 0, CountPositiveValuesProc, &position, 0, NULL);
+		hThreadArray[i] = CreateThread(NULL, 0, CountPositiveValuesProc, &sizes[i], 0, NULL);
 	}
 
 	if (PRINT_FUNCTIONS)
@@ -140,15 +141,11 @@ void CountPositiveValues() {
 
 void Sub() {
 	//inicalizacion del vector V
-	unsigned int tamaño = SIZE / NTHREADS;
-
 	//codigo del programa
 	for (unsigned int i = 0; i < NTHREADS; i++) {
-		int position = i*tamaño;
-		hThreadArray[i] = CreateThread(NULL, 0, SubProc, &position, 0, NULL);
+		hThreadArray[i] = CreateThread(NULL, 0, SubProc, &sizes[i], 0, NULL);
 	}
 	//eliminar de  memoria el vector V
-	removeVector(v);
 }
 
 // funcion usada para calcular el tiempo de la funcion pasada como parametro
@@ -177,6 +174,8 @@ int main() {
 
 	double times[TIMES];
 
+	generateSizes();
+
 	for (int j = 0; j < TIMES; j++) {
 		times[j] = 0;			//aseguramos valores reales
 		for (int i = 0; i < NTIMES; i++) {
@@ -197,6 +196,7 @@ int main() {
 			times[j] += timer(Sub);
 			wait();
 
+			removeVector(v);
 			removeVector(u);
 			removeVector(w);
 			removeVector(t);
