@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Multithread", "Multithread\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Multithread-SIMD", "Multithread-SIMD\Multithread-SIMD.vcxproj", "{9C3E736A-85A4-4EAB-993D-4EA121ECF5E3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InstructionSet", "InstructionSet\InstructionSet.vcxproj", "{60AAC4DA-BAC7-4336-8809-1BCA02646CA6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -33,6 +35,10 @@ Global
 		{9C3E736A-85A4-4EAB-993D-4EA121ECF5E3}.Debug|Win32.Build.0 = Debug|Win32
 		{9C3E736A-85A4-4EAB-993D-4EA121ECF5E3}.Release|Win32.ActiveCfg = Release|Win32
 		{9C3E736A-85A4-4EAB-993D-4EA121ECF5E3}.Release|Win32.Build.0 = Release|Win32
+		{60AAC4DA-BAC7-4336-8809-1BCA02646CA6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{60AAC4DA-BAC7-4336-8809-1BCA02646CA6}.Debug|Win32.Build.0 = Debug|Win32
+		{60AAC4DA-BAC7-4336-8809-1BCA02646CA6}.Release|Win32.ActiveCfg = Release|Win32
+		{60AAC4DA-BAC7-4336-8809-1BCA02646CA6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
