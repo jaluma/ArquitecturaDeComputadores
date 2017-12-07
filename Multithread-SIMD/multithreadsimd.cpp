@@ -51,12 +51,12 @@ unsigned int k;		//numero de positivos op2
 unsigned int* arrayK;	//almacena el valor devuelto de positivos por cada hilo
 float* s;			// vector resultante de op3
 
-					//devuelve un vector de tamaño SIZE
+//devuelve un vector de tamaño SIZE
 float* createVector() {
 	float* vector = (float *)_aligned_malloc(SIZE * sizeof(float), sizeof(__m256i));
 
 	for (int i = 0; i < SIZE; i++) {
-		float r = -1 + 2 * float((double)rand() / (double)(RAND_MAX)); // Aqui se explica por que hacerlo con double: https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c#comment56659626_13409133
+		float r = -1 + 2 * float((double)rand() / (double)(RAND_MAX)); // Aquí se explica por qué hacerlo con double: https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c#comment56659626_13409133
 		vector[i] = r;
 	}
 	return vector;
@@ -213,8 +213,8 @@ int main() {
 			arrayK = (unsigned int *)malloc(sizeof(unsigned int) * (NTHREADS));
 
 			//vectores resultantes
-			r = (float *)malloc(sizeof(float) * (SIZE - 1));
-			s = (float *)malloc(sizeof(float) * (SIZE - 1));
+			r = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
+			s = (float *)_aligned_malloc((SIZE - 1) * sizeof(float), sizeof(__m256i));
 
 			times[j] += timer(Dif2);
 			times[j] += timer(CountPositiveValues);
@@ -224,8 +224,8 @@ int main() {
 			removeVector(u);
 			removeVector(w);
 			removeVector(t);
-			/*removeVector(s);
-			removeVector(r);*/
+			removeVector(s);
+			removeVector(r);
 		}
 
 		if (PRINT_TIMER)
